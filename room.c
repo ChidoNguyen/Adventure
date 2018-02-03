@@ -4,4 +4,17 @@
 *Links rooms appropriately, functions will be specified prior to function defintion.
 */
 
-enum Room_Name { Weight, Court, Spa, Pool, Locker, Closet, Sauna, Food, Security}
+#include <stdio.h>
+
+/*
+ *Room structures to handle data related to our rooms
+ *cnx_cnt = connection count needs to stay below 6
+ */
+struct ROOMS{
+	int cnx_cnt=0;
+}
+
+//Main Function to test various usage Remove or comment out later//
+int main(){
+	return 0;
+}
