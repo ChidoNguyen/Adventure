@@ -26,6 +26,7 @@ int main(){
 	//https://stackoverflow.com/questions/33332533/create-directory-and-store-file-c-programming//
 	char* src = "nguychid.rooms.";
 	char* dirName;
+	printf("%s%i", src, PID);
 	sprintf(dirName, "%s%i",src,PID);
 	printf("%s",dirName);
 	return 0;
