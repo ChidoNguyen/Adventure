@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/stat.h> //required for mkdir
 /*
  *Room structures to handle data related to our rooms
  *rm_name has size 9 because MAX 8 characters + null term 
@@ -20,12 +21,13 @@ struct ROOMS{
 int main(){
 	//Names of all room outputs possible; 10 total//
 	char NAMES[10][9]= { "WEIGHTS", "COURT", "SPA", "SAUNA", "LOCKERS", "POOL", "STORE", "CLOSET", "FOODS", "GAINZ"};
-	
-	struct ROOMS one;
-	one.rm_name = NAMES[4];
-
-	
-	printf("Test Room: NAMES 1 : %s \n", one.rm_name );
-	
+	int PID = getpid();
+	char cPID[1] = {PID};
+	//making our directory nguychid.rooms.PID//
+	//https://stackoverflow.com/questions/33332533/create-directory-and-store-file-c-programming//
+	char *dir_name;
+	printf("%i\n", PID);
+	sprintf(dir_name , "/nguychid.rooms.%i",cPID);
+	printf("%s", dir_name); 
 	return 0;
 }
