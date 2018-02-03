@@ -19,15 +19,21 @@ struct ROOMS{
 
 //Main Function to test various usage Remove or comment out later//
 int main(){
+	
+	
+	
 	//Names of all room outputs possible; 10 total//
 	char NAMES[10][9]= { "WEIGHTS", "COURT", "SPA", "SAUNA", "LOCKERS", "POOL", "STORE", "CLOSET", "FOODS", "GAINZ"};
 	int PID = getpid();
 	//making our directory nguychid.rooms.PID//
 	//https://stackoverflow.com/questions/33332533/create-directory-and-store-file-c-programming//
 	char* src = "nguychid.rooms.";
-	char* dirName;
-	printf("%s%i", src, PID);
-	sprintf(dirName, "%s%i",src,PID);
-	printf("%s",dirName);
+	char dirNameCombo[20];						// stores our DIRECTORY NAME!!!
+	sprintf(dirNameCombo,"%s%i", src, PID);		//combine username.rooms with PID
+	mkdir(dirNameCombo, 0755);					//create the dir
+	
+	
+	
+	
 	return 0;
 }
