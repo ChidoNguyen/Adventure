@@ -221,7 +221,6 @@ int main(){
 	for(x=0; x < MAX_RM ; x++){
 		//combine director + file name //
 		sprintf(dirName_File, "./%s/%s", dirNameCombo, layout[x].rm_name);
-		printf("%s\n", dirName_File);
 		file = fopen(dirName_File, "w" );
 		fprintf(file,"ROOM NAME: %s\n", layout[x].rm_name);
 		for(j = 0; j < layout[x].cnx_cnt; j++){
