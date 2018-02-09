@@ -12,6 +12,12 @@
 #include <unistd.h>
 #include <dirent.h>
 
+struct ROOMS{
+	char name[9];
+	char links[7][9];
+	int type;
+};
+
 int main(){
 	
 	/*2.4 Lecture by Brewster
@@ -54,19 +60,34 @@ int main(){
 	DIR* roomsDIR;
 	struct dirent* subFiles;
 	FILE* rm_FILE;
+	char file_name[16];
+	memset(file_name, '\0', sizeof(file_name));
+	char file_io[256];
+	memset(file_io, '\0', sizeof(file_io));
+	
+	char dmp[48];
+	char dmp2[48];
+	char rm_name[9];
+	//memset( rm_name, '\0', sizeof(rm_name));
+	
+	
 	roomsDIR = opendir(sourceDIR);
 	if(roomsDIR > 0){
 		while((subFiles = readdir(roomsDIR)) != NULL){
-			if( strcmp(subFiles->d_name,"LOCKERS") == 0){
-			rm_FILE = fopen(subFiles->d_name, "r");
-			char ch;
-			ch = fgetc(rm_FILE);
-			while (ch != EOF){
-				printf("%c", ch);
-				ch = fgetc(rm_FILE);
+			while((strcmp(subFiles->d_name ,".") == 0) || (strcmp(subFiles->d_name ,"..") == 0)){
+				subFiles = readdir(roomsDIR);
 			}
-			fclose(rm_FILE);
-			}
+				int j = 0;
+				memset(file_name, '\0', sizeof(file_name));
+				strcpy(file_name, subFiles->d_name);
+				sprintf(file_io, "./%s/%s", sourceDIR, file_name);
+				rm_FILE = fopen(file_io, "r");
+				char txt[24];
+				memset( txt, '\0', sizeof(txt));
+				while(fgets(txt, 24, rm_FILE)){
+					sscanf(txt, "%s %s %s", dmp, dmp2, rm_name);
+					memset( txt, '\0', sizeof(txt));
+				}
 		}
 	}
 	closedir(roomsDIR);
