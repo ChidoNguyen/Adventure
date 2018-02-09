@@ -16,6 +16,7 @@ struct ROOMS{
 	char name[9];
 	char links[7][9];
 	int type;
+	int count;
 };
 
 int main(){
@@ -70,27 +71,68 @@ int main(){
 	char rm_name[9];
 	//memset( rm_name, '\0', sizeof(rm_name));
 	
-	
+	struct ROOMS layout[7];
+	int y;
+	for( y = 0; y < 7; y++){
+		layout[y].type = 1;
+		layout[y].count = 0;
+	}
+	int room_process_count = 0;
+	char *variant = "CONNECTION";
+	char *variant2 = "TYPE";
 	roomsDIR = opendir(sourceDIR);
 	if(roomsDIR > 0){
 		while((subFiles = readdir(roomsDIR)) != NULL){
+			//skip over the . and .. directories //
 			while((strcmp(subFiles->d_name ,".") == 0) || (strcmp(subFiles->d_name ,"..") == 0)){
 				subFiles = readdir(roomsDIR);
 			}
-				int j = 0;
+				//clear out our char array and copy in the room file names //
 				memset(file_name, '\0', sizeof(file_name));
 				strcpy(file_name, subFiles->d_name);
+				
+				//format the directory/file_name to open it properly
 				sprintf(file_io, "./%s/%s", sourceDIR, file_name);
 				rm_FILE = fopen(file_io, "r");
+				int x=0;
+				
 				char txt[24];
 				memset( txt, '\0', sizeof(txt));
 				while(fgets(txt, 24, rm_FILE)){
 					sscanf(txt, "%s %s %s", dmp, dmp2, rm_name);
+					if(x == 0){
+						strcpy(layout[room_process_count].name, rm_name);
+						x++;
+					}
+					if(strstr(dmp , variant)){
+						strcpy(layout[room_process_count].links[layout[room_process_count].count],rm_name);
+						layout[room_process_count].count++;
+					}
+					if(strstr(dmp2, variant2)){
+						if( strstr(rm_name, "START")){
+							printf("hi\n");
+							layout[room_process_count].type = 0;
+						}
+						else if( strstr(rm_name, "END")){
+							layout[room_process_count].type = 2;
+						}
+					}
 					memset( txt, '\0', sizeof(txt));
 				}
+				room_process_count++;
 		}
 	}
 	closedir(roomsDIR);
+	
+	int a,b;
+	for(a = 0; a < 7; a++){
+		printf("Name: %s\n" , layout[a].name);
+		for(b = 0 ; b < layout[a].count; b++){
+			printf("Con: %s\n" , layout[a].links[b]);
+		}
+		printf("Type: %i\n" , layout[a].type);
+	}
+	
 	
 	return 0;
 	
