@@ -11,13 +11,172 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <time.h>
 
 struct ROOMS{
 	char name[9];
-	char links[7][9];
+	char links[6][9];
 	int type;
 	int count;
 };
+
+struct Player{
+	char room[9];		//which room you're in
+	int status;		//END room status
+	int steps;
+	char hist[100][9];
+	
+};
+//https://linux.die.net/man/3/strftime//
+//https://www.tutorialspoint.com/c_standard_library/c_function_strftime.htm//
+void timefortime(){
+	
+	char timestamp[256];
+	memset(timestamp, '\0', sizeof(timestamp));
+	time_t t;
+	struct tm *info;
+	
+	time(&t);
+	info = localtime( &t);
+	strftime( timestamp, 256,"%X, %A, %B %d, %Y", info);
+	printf("%s\n", timestamp);
+};
+/*Returns room name from the ROOMS struct array and a given index
+Input: struct ROOMS* array, and integer index
+Output: Pointer to the structures name array string
+*/
+char* GetRoomName(struct ROOMS* arr, int x){
+	return arr[x].name;
+}
+
+/*
+Returns integer index representing the start room in the struct ROOMS* array
+*/
+int FindStart(struct ROOMS* arr){
+	int x;
+	for(x = 0; x < 7; x++){
+		if(arr[x].type == 0){
+			return x;
+		}
+	}
+}
+
+/*
+Params: struct for Players and ROOMS
+Output: No return, but populates the current room the user starts in
+*/
+void SetupPlayer( struct Player* p1, struct ROOMS* arr){
+	int x = FindStart(arr);
+	strcpy(p1->room , arr[x].name);
+}
+/*
+Basic Helper function returns room name from Player struct
+*/
+char* CurRoom(struct Player* p1){
+	return p1->room;
+}
+
+/*
+Function returns array index integer equivalent to its name
+*/
+int RoomNumba(struct ROOMS* arr, struct Player* p1){
+	char * tmp = CurRoom(p1);
+	int x;
+	for(x = 0; x < 7; x++){
+		if(!strcmp(tmp, arr[x].name))
+			return x;
+	}
+}
+/*
+PossCons
+In: ROOMS struct array
+Out: Generates printf command to print possible room connections
+*/
+void PossCons(struct ROOMS* arr, struct Player* p1){
+	int ind = RoomNumba(arr,p1);
+	printf("POSSIBLE CONNECTIONS: ");
+	int x;
+	for( x = 0; x < arr[ind].count; x++){
+		if(x+1 == arr[ind].count){
+			printf("%s.\n", arr[ind].links[x]);
+		}
+		else {
+			printf("%s, ",arr[ind].links[x]);
+		}
+	}
+	
+}
+/*
+RoomCheck- Verifies if userinput is valid with room connections
+Input: struct Rooms and Player, and user input
+Output: 1 for true userinput is part of room connections
+		0 if not part
+*/
+int RoomCheck(struct ROOMS* arr, struct Player* p1, char* userIn){
+	int x;
+	int loop = RoomNumba( arr, p1);
+	for(x = 0; x < arr[loop].count; x++){
+		if(!(strcmp(userIn, arr[loop].links[x]))){
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/*
+CoachSession
+Input: ROOMS* array , Player struct, and userInput for where to?
+Output: Nothing returned. Does a string check to see if legal room choice input
+		-Call time function instead if time
+		-Update user location/ status as needed.
+*/
+void CoachSession(struct ROOMS* arr, struct Player* p1, char* userIn){
+	char *tm = "time";
+	int verify;
+	int str_time = strcmp(userIn, tm);
+	if(!str_time)
+		timefortime();
+	else{
+		verify = RoomCheck(arr,p1,userIn);
+		
+		if(verify){
+			strcpy(p1->hist[p1->steps],p1->room);
+			p1->steps++;
+			memset(p1->room, '\0', sizeof(p1->room));
+			strcpy(p1->room, userIn);
+		}
+		else
+			printf("\nHUH? I DONT'T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n");
+	}
+}
+
+/*
+EndGame - Checks to see if current room user is in is end game to signal "finished"
+Param: structure of our Player and our layout struct arr
+Output: Void, alters structure status to show end game has been met
+		changes p1->status to 0 if end_game is met
+*/
+void EndGame(struct ROOMS* arr, struct Player* p1){
+	int tmp_rm = RoomNumba(arr, p1);
+	if( arr[tmp_rm].type == 2 ){
+		p1->status = 0;
+	}
+}
+
+/*
+printWinner()- prints out you've found exit , # of steps , and steps taken
+input: both struct ROOMS and Player to grab name and step count
+output: winner / step count / route
+*/
+void printWinner(struct Player* p1){
+	printf("\n\nEXIT ROOM FOUND. END OF GAME\n\n");
+	printf("YOU TOOK %i STEPS.\nYOUR PATH HISTORY:\n", p1->steps);
+	int x;
+	for(x = 1; x < p1->steps; x++){
+		printf("%s\n", p1->hist[x]);
+	}
+	printf("%s\n", p1->room);
+}
 
 int main(){
 	
@@ -71,6 +230,9 @@ int main(){
 	char rm_name[9];
 	//memset( rm_name, '\0', sizeof(rm_name));
 	
+	
+	
+	//create our 7 room struct array and initialize some base values
 	struct ROOMS layout[7];
 	int y;
 	for( y = 0; y < 7; y++){
@@ -80,6 +242,7 @@ int main(){
 	int room_process_count = 0;
 	char *variant = "CONNECTION";
 	char *variant2 = "TYPE";
+	
 	roomsDIR = opendir(sourceDIR);
 	if(roomsDIR > 0){
 		while((subFiles = readdir(roomsDIR)) != NULL){
@@ -99,18 +262,17 @@ int main(){
 				char txt[24];
 				memset( txt, '\0', sizeof(txt));
 				while(fgets(txt, 24, rm_FILE)){
-					sscanf(txt, "%s %s %s", dmp, dmp2, rm_name);
+					sscanf(txt, "%s %s %s", dmp, dmp2, rm_name);		//parse our read in line 
 					if(x == 0){
-						strcpy(layout[room_process_count].name, rm_name);
+						strcpy(layout[room_process_count].name, rm_name);		// copy room name
 						x++;
 					}
 					if(strstr(dmp , variant)){
-						strcpy(layout[room_process_count].links[layout[room_process_count].count],rm_name);
+						strcpy(layout[room_process_count].links[layout[room_process_count].count],rm_name);		// if connections add to links
 						layout[room_process_count].count++;
 					}
-					if(strstr(dmp2, variant2)){
+					if(strstr(dmp2, variant2)){		// if type check to see if start or end room 
 						if( strstr(rm_name, "START")){
-							printf("hi\n");
 							layout[room_process_count].type = 0;
 						}
 						else if( strstr(rm_name, "END")){
@@ -119,19 +281,43 @@ int main(){
 					}
 					memset( txt, '\0', sizeof(txt));
 				}
+				fclose(rm_FILE);
 				room_process_count++;
 		}
 	}
 	closedir(roomsDIR);
 	
-	int a,b;
+	struct Player gymbro;
+	gymbro.status = 1;
+	gymbro.steps = 0 ;
+	SetupPlayer(&gymbro, layout);
+	char userInput[64];
+	char *pos;
+	memset(userInput, '\0', sizeof(userInput));
+	
+	// Loop the "game" while end game hasn't been achieved
+	do{
+		printf("CURRENT ROOM: %s\n", CurRoom(&gymbro));
+		PossCons(layout, &gymbro);
+		printf("WHERE TO? >");
+		fgets(userInput, 64, stdin);
+		//https://stackoverflow.com/questions/2693776/removing-trailing-newline-character-from-fgets-input//
+		// Removing trailing new line in user input
+		if(( pos = strchr (userInput, '\n')) != NULL)
+			*pos = '\0';
+		CoachSession(layout, &gymbro, userInput);
+		EndGame(layout,&gymbro);
+	}while(gymbro.status);
+	
+	printWinner(&gymbro);
+/* 	int a,b;
 	for(a = 0; a < 7; a++){
 		printf("Name: %s\n" , layout[a].name);
 		for(b = 0 ; b < layout[a].count; b++){
 			printf("Con: %s\n" , layout[a].links[b]);
 		}
 		printf("Type: %i\n" , layout[a].type);
-	}
+	} */
 	
 	
 	return 0;
