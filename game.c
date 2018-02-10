@@ -11,7 +11,16 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <pthread.h>
 #include <time.h>
+
+pthread_t tid[2];
+pthread_mutex_t lock;
+char* sharedTIME = "currentTime.txt";
+
+
+
+
 
 struct ROOMS{
 	char name[9];
@@ -27,20 +36,51 @@ struct Player{
 	char hist[100][9];
 	
 };
+
+
 //https://linux.die.net/man/3/strftime//
 //https://www.tutorialspoint.com/c_standard_library/c_function_strftime.htm//
-void timefortime(){
-	
+//https://www.thegeekstuff.com/2012/05/c-mutex-examples/?refcom//
+void* timefortime(void* stuff){
+	pthread_mutex_lock(&lock);
+	stuff = fopen(sharedTIME, "w");
 	char timestamp[256];
 	memset(timestamp, '\0', sizeof(timestamp));
 	time_t t;
 	struct tm *info;
-	
 	time(&t);
 	info = localtime( &t);
 	strftime( timestamp, 256,"%X, %A, %B %d, %Y", info);
-	printf("%s\n", timestamp);
-};
+	fprintf(stuff,"%s\n", timestamp);
+	fclose(stuff);
+	pthread_mutex_unlock(&lock);
+}
+
+void* telltime(void *stuff){
+	pthread_mutex_lock(&lock);
+	int gate=0;
+	char timeout[256];
+	memset(timeout, '\0', sizeof(timeout));
+	stuff = fopen( sharedTIME, "r");
+	fseek(stuff, 0, SEEK_END);
+	int size = ftell(stuff);
+	fclose(stuff);
+	while(size == 0){
+		pthread_mutex_unlock(&lock);
+		stuff = fopen( sharedTIME, "r");
+		fseek(stuff, 0, SEEK_END);
+		size = ftell(stuff);
+		fclose(stuff);
+		gate++;
+	}
+	if(gate > 0) pthread_mutex_lock(&lock);
+	stuff = fopen(sharedTIME, "r");
+	fgets(timeout, 256,stuff);
+	printf("\n\n%s\n", timeout);
+	fclose(stuff);
+	pthread_mutex_unlock(&lock);
+}
+
 /*Returns room name from the ROOMS struct array and a given index
 Input: struct ROOMS* array, and integer index
 Output: Pointer to the structures name array string
@@ -134,20 +174,16 @@ void CoachSession(struct ROOMS* arr, struct Player* p1, char* userIn){
 	char *tm = "time";
 	int verify;
 	int str_time = strcmp(userIn, tm);
-	if(!str_time)
-		timefortime();
-	else{
-		verify = RoomCheck(arr,p1,userIn);
-		
-		if(verify){
-			strcpy(p1->hist[p1->steps],p1->room);
-			p1->steps++;
-			memset(p1->room, '\0', sizeof(p1->room));
-			strcpy(p1->room, userIn);
-		}
-		else
-			printf("\nHUH? I DONT'T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n");
+	verify = RoomCheck(arr,p1,userIn);
+	if(verify){
+		strcpy(p1->hist[p1->steps],p1->room);
+		p1->steps++;
+		memset(p1->room, '\0', sizeof(p1->room));
+		strcpy(p1->room, userIn);
 	}
+	else
+		printf("\nHUH? I DONT'T UNDERSTAND THAT ROOM. TRY AGAIN.\n\n");
+	
 }
 
 /*
@@ -287,6 +323,11 @@ int main(){
 	}
 	closedir(roomsDIR);
 	
+	FILE* fp;
+	fp= fopen(sharedTIME, "w");
+	fclose(fp);
+	int thd;
+	int join = 0;
 	struct Player gymbro;
 	gymbro.status = 1;
 	gymbro.steps = 0 ;
@@ -305,6 +346,21 @@ int main(){
 		// Removing trailing new line in user input
 		if(( pos = strchr (userInput, '\n')) != NULL)
 			*pos = '\0';
+		
+		while(strcmp(userInput, "time") == 0){
+			pthread_create(&tid[0], NULL, &timefortime, (void*) fp);
+			pthread_create(&tid[1], NULL, &telltime, (void*) fp);
+			while(join < 2){
+				pthread_join(tid[join], NULL);
+				join++;
+			}
+			join = 0;
+			memset(userInput, '\0', sizeof(userInput));
+			printf("WHERE TO? >");
+			fgets(userInput, 64, stdin);
+			if(( pos = strchr (userInput, '\n')) != NULL)
+			*pos = '\0';
+		}
 		CoachSession(layout, &gymbro, userInput);
 		EndGame(layout,&gymbro);
 	}while(gymbro.status);
