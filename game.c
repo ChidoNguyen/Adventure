@@ -14,21 +14,32 @@
 #include <pthread.h>
 #include <time.h>
 
+//https://www.thegeekstuff.com/2012/05/c-mutex-examples/?refcom
 pthread_t tid[2];
 pthread_mutex_t lock;
 char* sharedTIME = "currentTime.txt";
 
 
-
-
-
+/*
+Structure used to store room info when read in from file
+name of file
+which room names it is linked with
+type refers to mid/end/start
+count used to keep track of  how many rooms its linked with
+*/
 struct ROOMS{
 	char name[9];
 	char links[6][9];
 	int type;
 	int count;
 };
-
+/*
+Player structure:
+Stores current room via name the user is in
+Status determines if the room user is in end room yet
+Steps counts # of steps
+hist array stores rooms the user transverses through
+*/
 struct Player{
 	char room[9];		//which room you're in
 	int status;		//END room status
@@ -41,6 +52,11 @@ struct Player{
 //https://linux.die.net/man/3/strftime//
 //https://www.tutorialspoint.com/c_standard_library/c_function_strftime.htm//
 //https://www.thegeekstuff.com/2012/05/c-mutex-examples/?refcom//
+
+/*
+timefortime: writes formatted timestamp to currentTime.txt
+Used with threading, function locks -> writes -> unlock
+*/
 void* timefortime(void* stuff){
 	pthread_mutex_lock(&lock);
 	stuff = fopen(sharedTIME, "w");
@@ -56,6 +72,12 @@ void* timefortime(void* stuff){
 	pthread_mutex_unlock(&lock);
 }
 
+/*
+telltime - reads the formatted timestamp from timefortime and outputs to console 
+Used with threading counterpart timefortime: lock -> read ->print -> unlock
+It also runs a file check to make sure the file has been written to before reading. If empty
+function will loop and unlock to give timefortime a chance to write before relocking
+*/
 void* telltime(void *stuff){
 	pthread_mutex_lock(&lock);
 	int gate=0;
@@ -375,7 +397,7 @@ int main(){
 		printf("Type: %i\n" , layout[a].type);
 	} */
 	
-	
+	pthread_mutex_destroy(&lock);
 	return 0;
 	
 }
