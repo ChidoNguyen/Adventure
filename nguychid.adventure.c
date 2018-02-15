@@ -66,7 +66,7 @@ void* timefortime(){
 	struct tm *info;
 	time(&t);
 	info = localtime( &t);
-	strftime( timestamp, 256,"%X, %A, %B %d, %Y", info);
+	strftime( timestamp, 256,"%l:%M%P, %A, %B %e, %Y", info);
 	fprintf(stuff,"%s\n", timestamp);
 	fclose(stuff);
 	pthread_mutex_unlock(&lock);
@@ -253,9 +253,8 @@ void* game(void* layout){
 			*pos = '\0';
 		
 		while(strcmp(userInput, "time") == 0){
-			//pthread_create(&tid[0], NULL, &timefortime, (void*) fp);
-			pthread_mutex_unlock(&lock);
 			pthread_create(&tid[1], NULL, &timefortime, NULL);
+			pthread_mutex_unlock(&lock);
 			pthread_join(tid[1], NULL);
 			pthread_mutex_lock(&lock);
 			telltime();// prints out time after other thread writes to file //
